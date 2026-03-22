@@ -1,6 +1,6 @@
 ---
 name: book-download
-description: "This skill downloads novel/book chapter content from web fiction sites (69shuba.com, zongheng.com) and saves them as plain text files. It should be used when the user provides a novel chapter URL and wants to download one or more chapters to a local txt file. Trigger phrases include 下载小说, 抓取章节, 保存小说内容, 下载到txt, or when the user provides a URL from a supported fiction site and asks to extract or save the content."
+description: "This skill downloads novel/book chapter content from web fiction sites (69shuba.com, zongheng.com, book.qq.com) and saves them as plain text files. It should be used when the user provides a novel chapter URL and wants to download one or more chapters to a local txt file. Trigger phrases include 下载小说, 抓取章节, 保存小说内容, 下载到txt, or when the user provides a URL from a supported fiction site and asks to extract or save the content."
 ---
 
 # Book Download — 小说章节下载 v2
@@ -9,10 +9,11 @@ description: "This skill downloads novel/book chapter content from web fiction s
 
 ## 支持的网站
 
-| 网站 | 域名 | 防护 | 翻页方式 |
-|------|------|------|----------|
-| 69书吧 | 69shuba.com | Cloudflare（需手动验证） | `bookinfo.next_page`（页面内变量） |
-| 纵横中文网 | zongheng.com | 无 | open 下一章 URL |
+| 网站 | 域名 | 防护 | 翻页方式 | 脚本 |
+|------|------|------|----------|------|
+| 69书吧 | 69shuba.com | Cloudflare（需手动验证） | `bookinfo.next_page`（页面内变量） | `book-download.sh` |
+| 纵横中文网 | zongheng.com | 无 | open 下一章 URL | `book-download.sh` |
+| QQ阅读 | book.qq.com | 无 | open 下一章 URL | `extract_qqread.py` ✨新增 |
 
 ## 前置条件
 
@@ -184,6 +185,30 @@ sleep 3
 
 # 重复以上步骤
 ```
+
+### QQ阅读 (book.qq.com) 使用方法
+
+QQ阅读使用独立的 Python 脚本，通过 CDP 协议直接连接 Chrome 提取内容（不依赖 browser-use CLI）。
+
+```bash
+# 1. 启动 Chrome 打开章节页面
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --remote-debugging-port=9222 \
+  --remote-allow-origins="*" \
+  --user-data-dir="/tmp/chrome-debug-profile" \
+  --no-first-run \
+  --no-default-browser-check \
+  "https://book.qq.com/book-read/<书籍ID>/<章节号>" > /dev/null 2>&1 &
+
+# 2. 等待页面加载后运行提取脚本
+SKILL_DIR="$(find ~/.workbuddy/skills ~/.codebuddy/skills -name 'book-download' -type d 2>/dev/null | head -1)"
+python3 "$SKILL_DIR/scripts/extract_qqread.py" <章节数|all> "<输出文件.txt>"
+```
+
+**特点**：
+- 无需 browser-use CLI，只需 Python 3 + `websocket-client` 库（脚本会自动安装）
+- 自动提取章节标题（`h1.chapter-title`）和正文（`.chapter-content p`）
+- 支持 `all` 参数下载全部章节
 
 ## 已知问题和注意事项
 
