@@ -36,20 +36,23 @@ def extract_chapter(ws_url):
     
     js_code = """
     (function() {
-        // 获取章节标题 - 优先 h1.chapter-title，其次从 pageTitle 提取
-        let title = document.querySelector('h1.chapter-title')?.innerText || '';
+        // 获取章节标题 - 精确选择器：#bookRead > div.page-content > div.read-header > h1
+        let title = document.querySelector('#bookRead > div.page-content > div.read-header > h1')?.innerText || '';
         if (!title) {
-            // 尝试从页面 title 提取章节名（格式：书名_第X章 章节名在线阅读-QQ阅读）
-            const pageTitle = document.title;
-            const match = pageTitle.match(/第\\d+章[^在线]*/);
-            title = match ? match[0].trim() : pageTitle.split('_')[1]?.split('在线')[0] || pageTitle;
+            // 降级：尝试 h1.chapter-title 或从 pageTitle 提取
+            title = document.querySelector('h1.chapter-title')?.innerText || '';
+            if (!title) {
+                const pageTitle = document.title;
+                const match = pageTitle.match(/第\\d+章[^在线]*/);
+                title = match ? match[0].trim() : pageTitle.split('_')[1]?.split('在线')[0] || pageTitle;
+            }
         }
         
-        // 获取正文段落 - 从 .chapter-content 内的 p 标签
-        const contentDiv = document.querySelector('.chapter-content');
-        const paragraphs = contentDiv 
-            ? Array.from(contentDiv.querySelectorAll('p')).map(p => p.innerText.trim()).filter(t => t && t.length > 0)
-            : Array.from(document.querySelectorAll('p')).map(p => p.innerText.trim()).filter(t => t && t.length > 0);
+        // 获取正文 - 精确选择器：#article
+        const articleDiv = document.querySelector('#article');
+        const paragraphs = articleDiv 
+            ? Array.from(articleDiv.querySelectorAll('p')).map(p => p.innerText.trim()).filter(t => t && t.length > 0)
+            : Array.from(document.querySelectorAll('.chapter-content p, .page-content p')).map(p => p.innerText.trim()).filter(t => t && t.length > 0);
         
         // 获取下一章链接
         let nextUrl = '';
