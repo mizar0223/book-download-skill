@@ -13,7 +13,7 @@ description: "This skill downloads novel/book chapter content from web fiction s
 |------|------|------|----------|------|
 | 69书吧 | 69shuba.com | Cloudflare（需手动验证） | `bookinfo.next_page`（页面内变量） | `book-download.sh` |
 | 纵横中文网 | zongheng.com | 无 | open 下一章 URL | `book-download.sh` |
-| QQ阅读 | book.qq.com | 无 | open 下一章 URL | `extract_qqread.py` ✨新增 |
+| QQ阅读 | book.qq.com | 免费章节无，**会员章节有字体加密** | open 下一章 URL | `extract_qqread.py` |
 
 ## 前置条件
 
@@ -207,8 +207,22 @@ python3 "$SKILL_DIR/scripts/extract_qqread.py" <章节数|all> "<输出文件.tx
 
 **特点**：
 - 无需 browser-use CLI，只需 Python 3 + `websocket-client` 库（脚本会自动安装）
-- 自动提取章节标题（`h1.chapter-title`）和正文（`.chapter-content p`）
+- 自动提取章节标题（`#bookRead > div.page-content > div.read-header > h1`）和正文（`#article`）
 - 支持 `all` 参数下载全部章节
+
+**⚠️ 重要限制：会员章节无法下载**
+
+QQ阅读对会员/VIP 章节使用了**字体加密（font-encrypt）**技术：
+
+| 保护层 | 技术 | 说明 |
+|--------|------|------|
+| 禁止选择 | `user-select: none` | 可绕过 |
+| 禁止复制 | `oncopy` 事件拦截 | 可绕过 |
+| **字体加密** | 自定义 `@font-face` 动态映射 | **无法绕过** |
+
+**原理**：会员章节的 HTML 中存储的是加密字符（如 `㐂妇䔡绵`），通过动态生成的 woff2 字体文件映射为正确文字。即使绕过复制保护，提取到的仍是乱码。
+
+**结论**：本 skill 仅支持 QQ阅读的**免费章节**。会员章节请使用官方渠道阅读或下载。
 
 ## 已知问题和注意事项
 
